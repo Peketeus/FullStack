@@ -1,6 +1,5 @@
 const express = require('express')
 const morgan = require('morgan')
-const cors = require('cors')
 
 const app = express()
 
@@ -8,7 +7,6 @@ morgan.token('body', function (req, res) {
   return JSON.stringify(req.body)
 })
 
-app.use(cors())
 app.use(express.static('dist'))
 app.use(express.json())
 app.use(morgan((tokens, req, res) => {
@@ -51,6 +49,7 @@ let persons = [
 ]
 
 // juuren GET pyyntö
+// näkyy hostatessa render.com sivustolla
 app.get('/', (req, res) => {
   res.send('<h1>Fullstack osa3</h1>')
 })
