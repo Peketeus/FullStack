@@ -168,7 +168,8 @@ const App = () => {
 
       <h3>Numbers</h3>
 
-      <Persons shownPersons={shownPersons} removePerson={removePerson} />
+      {/*Tähän kohtaan lisätty Array.isArray errorin välttämiseksi. Komponentti saattaa latautua ennen useEffectin datan saamista*/}
+      <Persons shownPersons={Array.isArray(shownPersons) ? shownPersons : []} removePerson={removePerson} />
 
     </div>
   )
