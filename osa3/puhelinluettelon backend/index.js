@@ -1,5 +1,36 @@
+require('dotenv').config()                    // dotenv on tärkeää olla ensimmäisenä, että muuttujille on sisältö heti saatavilla
 const express = require('express')
 const morgan = require('morgan')
+const Person = require('./models/person')
+const mongoose = require('mongoose')
+
+
+// ------------------MongoDB------------------------------------------------------------
+// ÄLÄ KOSKAAN TALLETA SALASANOJA GitHubiin!
+/* Kommentoitu pois ja siirretty models.person.js tiedostoon
+const password = process.argv[2]
+const url = `mongodb+srv://p3keteus:${password}@cluster0.tdv1kfb.mongodb.net/personApp?retryWrites=true&w=majority&appName=Cluster0`
+
+mongoose.set('strictQuery',false)
+mongoose.connect(url)
+
+const personSchema = new mongoose.Schema({
+  name: String,
+  number: String,
+})
+
+// poistaa '_id' ja '__v' kentät
+personSchema.set('toJSON', {
+  transform: (document, returnedObject) => {
+    returnedObject.id = returnedObject._id.toString()
+    delete returnedObject._id
+    delete returnedObject.__v
+  }
+})
+
+const Person = mongoose.model('Person', personSchema)
+*/
+//--------------------------------------------------------------------------------------
 
 const app = express()
 
@@ -25,28 +56,7 @@ app.use(morgan((tokens, req, res) => {
   return log.join(' ')
 }))
 
-let persons = [
-  {
-    id: "1",
-    name: "Arto Hellas",
-    number: "040-123456"
-  },
-  {
-    id: "2",
-    name: "Ada Lovelace",
-    number: "39-44-5323523"
-  },
-  {
-    id: "3",
-    name: "Dan Abramov",
-    number: "12-43-234345"
-  },
-  {
-    id: "4",
-    name: "Mary Poppendieck",
-    number: "39-23-64-23122"
-  }
-]
+let persons = []
 
 // juuren GET pyyntö
 // näkyy hostatessa render.com sivustolla
@@ -56,7 +66,9 @@ app.get('/', (req, res) => {
 
 // palauttaa henkilöt
 app.get('/api/persons', (req, res) => {
-  res.json(persons)
+  Person.find({}).then(persons => {
+    res.json(persons)
+  })
 })
 
 // palauttaa infon
@@ -70,20 +82,15 @@ app.get('/info', (req, res) => {
 
 // etsii tietyllä id numerolla henkilöä puhelinluettelosta (persons)
 app.get('/api/persons/:id', (req, res) => {
-  const id = req.params.id
-  const person = persons.find(person => person.id === id)
-  
-  if (person) {
-    res.json(person.number)
-  } else {
-    res.status(404).end()
-  }
+  Person.findById(req.params.id).then(person => {
+    res.json(person)
+  })
 })
 
 // poistaa numerotiedon
 app.delete('/api/persons/:id', (req, res) => {
   const id = req.params.id
-  persons = persons.filter(person => person.id !== id)
+  persons = persons.filter((person) => person.id !== id)
 
   res.status(204).end()
 })
@@ -98,6 +105,7 @@ app.post('/api/persons', (req, res) => {
     })
   }
 
+  // Luettelossa ei voi olla kahta henkilöä samalla nimellä. Frontendissä on tarkistin tälle, joka päivittää uuden numeron jo olemassa olevalle nimelle. Tarkista voiko poistaa!
   const personExists = persons.find(person => person.name === body.name)
 
   if (personExists) {
@@ -106,20 +114,33 @@ app.post('/api/persons', (req, res) => {
     })
   }
 
-  const newId = Math.floor(Math.random() * 100001)
+  // const newId = Math.floor(Math.random() * 100001)
 
+  /* Otettu pois tehtävässä 3.14
   const person = {
     id: String(newId),
     name: body.name,
     number: body.number,
   }
+  */
 
-  persons = persons.concat(person)
+  const person = new Person({
+  name: body.name,
+  number: body.number,
+  })
 
-  res.json(person)
+  // Kommentoitu pois Osa3 Tietokannan käyttö reittien käsittelijöissä
+  // persons = persons.concat(person)
+
+  person.save().then(savedPerson => {
+    res.json(savedPerson)
+  })
+
+  // Kommentoitu pois Osa3 Tietokannan käyttö reittien käsittelijöissä
+  // res.json(person)
 })
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
