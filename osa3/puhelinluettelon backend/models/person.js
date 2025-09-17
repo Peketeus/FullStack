@@ -1,4 +1,4 @@
-// ------------------MongoDB------------------------------------------------------------
+// MongoDB
 // ÄLÄ KOSKAAN TALLETA SALASANOJA GitHubiin!
 const mongoose = require('mongoose')
 
@@ -15,9 +15,18 @@ mongoose.connect(url)
     console.log('error connecting to MongoDB:', error.message)
   })
 
+// skeema henkilöille.
 const personSchema = new mongoose.Schema({
-  name: String,
-  number: String,
+  name: {
+    type: String,
+    minlenght: 2,
+    required: true,
+  },
+  number: {
+    type: String,
+    minlenght: 3,
+    required: true,
+  },
 })
 
 // poistaa '_id' ja '__v' kentät
@@ -30,5 +39,3 @@ personSchema.set('toJSON', {
 })
 
 module.exports = mongoose.model('Person', personSchema)
-
-//--------------------------------------------------------------------------------------

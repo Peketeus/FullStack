@@ -2,35 +2,7 @@ require('dotenv').config()                    // dotenv on tärkeää olla ensim
 const express = require('express')
 const morgan = require('morgan')
 const Person = require('./models/person')
-const mongoose = require('mongoose')
-
-
-// ------------------MongoDB------------------------------------------------------------
-// ÄLÄ KOSKAAN TALLETA SALASANOJA GitHubiin!
-/* Kommentoitu pois ja siirretty models.person.js tiedostoon
-const password = process.argv[2]
-const url = `mongodb+srv://p3keteus:${password}@cluster0.tdv1kfb.mongodb.net/personApp?retryWrites=true&w=majority&appName=Cluster0`
-
-mongoose.set('strictQuery',false)
-mongoose.connect(url)
-
-const personSchema = new mongoose.Schema({
-  name: String,
-  number: String,
-})
-
-// poistaa '_id' ja '__v' kentät
-personSchema.set('toJSON', {
-  transform: (document, returnedObject) => {
-    returnedObject.id = returnedObject._id.toString()
-    delete returnedObject._id
-    delete returnedObject.__v
-  }
-})
-
-const Person = mongoose.model('Person', personSchema)
-*/
-//--------------------------------------------------------------------------------------
+const mongoose = require('mongoose')          // riittää pelkkä require('mongoose') ?
 
 const app = express()
 
@@ -56,46 +28,19 @@ app.use(morgan((tokens, req, res) => {
   return log.join(' ')
 }))
 
-let persons = []
+const errorHandler = (error, req, res, next) => {
+  console.error(error.message)
 
-// juuren GET pyyntö
-// näkyy hostatessa render.com sivustolla
-app.get('/', (req, res) => {
-  res.send('<h1>Fullstack osa3</h1>')
-})
+  if (error.name === 'CastError') {
+    return res.status(400).send({ error: 'malformatted id' })
+  } else if (error.name === 'ValidationError') {
+    return res.status(400).send({ error: error.message })
+  }
 
-// palauttaa henkilöt
-app.get('/api/persons', (req, res) => {
-  Person.find({}).then(persons => {
-    res.json(persons)
-  })
-})
+  next(error)
+}
 
-// palauttaa infon
-app.get('/info', (req, res) => {
-  const length = persons.length
-  const date = new Date()
-
-  res.send(`<p>Phonebook has info for ${length} people</p>
-    <p>${date}</p>`)
-})
-
-// etsii tietyllä id numerolla henkilöä puhelinluettelosta (persons)
-app.get('/api/persons/:id', (req, res) => {
-  Person.findById(req.params.id).then(person => {
-    res.json(person)
-  })
-})
-
-// poistaa numerotiedon
-app.delete('/api/persons/:id', (req, res) => {
-  const id = req.params.id
-  persons = persons.filter((person) => person.id !== id)
-
-  res.status(204).end()
-})
-
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
   const body = req.body
   // console.log(body)
 
@@ -105,40 +50,87 @@ app.post('/api/persons', (req, res) => {
     })
   }
 
-  // Luettelossa ei voi olla kahta henkilöä samalla nimellä. Frontendissä on tarkistin tälle, joka päivittää uuden numeron jo olemassa olevalle nimelle. Tarkista voiko poistaa!
-  const personExists = persons.find(person => person.name === body.name)
-
-  if (personExists) {
-    return res.status(400).json({
-      error: 'name must be unique'
-    })
-  }
-
-  // const newId = Math.floor(Math.random() * 100001)
-
-  /* Otettu pois tehtävässä 3.14
-  const person = {
-    id: String(newId),
-    name: body.name,
-    number: body.number,
-  }
-  */
-
   const person = new Person({
   name: body.name,
   number: body.number,
   })
 
-  // Kommentoitu pois Osa3 Tietokannan käyttö reittien käsittelijöissä
-  // persons = persons.concat(person)
-
-  person.save().then(savedPerson => {
-    res.json(savedPerson)
-  })
-
-  // Kommentoitu pois Osa3 Tietokannan käyttö reittien käsittelijöissä
-  // res.json(person)
+  person.save()
+    .then(savedPerson => res.json(savedPerson))
+    .catch(error => next(error))
 })
+
+// juuren GET pyyntö
+// näkyy hostatessa render.com sivustolla
+app.get('/', (req, res) => {
+  res.send('<h1>Fullstack osa3</h1>')
+})
+
+// palauttaa henkilöt
+app.get('/api/persons', (req, res, next) => {
+  Person.find({})
+    .then(persons => {
+      res.json(persons)
+  })
+  .catch(error => next(error))
+})
+
+// palauttaa infon (henkilöiden määrän ja ajan)
+app.get('/info', (req, res, next) => {
+  Person.countDocuments({})
+    .then(count => {
+      res.send(`<p>Phonebook has info for ${count} people</p><p>${new Date()}</p>`)
+    })
+    .catch(error => next(error))
+})
+
+// etsii tietyllä id numerolla henkilöä puhelinluettelosta (persons)
+app.get('/api/persons/:id', (req, res, next) => {
+  Person.findById(req.params.id).then(person => {
+    if (person) {
+      res.json(person)
+    } else {
+      res.status(404).end()
+    }
+  })
+  .catch(error => next(error))
+})
+
+// poistaa numerotiedon
+app.delete('/api/persons/:id', (req, res, next) => {
+  Person.findByIdAndDelete(req.params.id)
+    .then(result => {
+      res.status(204).end()
+    })
+    .catch(error => next(error))
+})
+
+// numeron muokkaus
+app.put('/api/persons/:id', (req, res, next) => {
+  const { name, number } = req.body
+
+  Person.findByIdAndUpdate(
+    req.params.id,
+    { name, number },
+    { new: true, runValidators: true, context: 'query' } // run validators vaatii oikean skeeman
+  )
+    .then(updatedPerson => {
+      if (updatedPerson) {
+        res.json(updatedPerson)
+      } else {
+        res.status(404).end()
+      }
+    })
+    .catch(error => next(error))
+})
+
+const unknownEndpoint = (req, res) => {
+  res.status(404).send({ error: 'unknown endpoint' })
+}
+
+// olemattomien osoitteiden käsittely
+app.use(unknownEndpoint)
+app.use(errorHandler)
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
