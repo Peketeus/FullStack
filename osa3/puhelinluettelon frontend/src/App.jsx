@@ -3,7 +3,7 @@ import PersonForm from './PersonForm'
 import Persons from './Persons'
 import Filter from './Filter'
 import personService from './services/persons'
-import Notification from './Notification'
+import {ErrorNotification, SuccessNotification} from './Notification'
 
 const App = () => {
   const [persons, setPersons] = useState([])
@@ -20,11 +20,13 @@ const App = () => {
   const [newNumber, setNewNumber] = useState('')
   const [filterName, setFilter] = useState('')
   const [errorMessage, setErrorMessage] = useState(null)
+  const [successMessage, setSuccessMessage] = useState(null)
 
   const addPerson = (event) => {
     event.preventDefault()
     console.log('button clicked', event.target)
 
+    // käsittelee numeron päivittämisen
     if (persons.some(person => person.name === newName && person.number !== newNumber)) {
       const conf = window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)
 
@@ -46,9 +48,9 @@ const App = () => {
             setNewName('')
             setNewNumber('')
 
-            setErrorMessage(`Numero on päivitetty henkilölle ${returnedPerson.name}`)
+            setSuccessMessage(`Numero on päivitetty henkilölle ${returnedPerson.name}`)
             setTimeout(() => {
-              setErrorMessage(null)
+              setSuccessMessage(null)
             }, 5000)
           })
           .catch(error => {
@@ -64,20 +66,7 @@ const App = () => {
       return
     }
 
-    if (newName === '') {
-      setErrorMessage(
-        'Virheellinen syöte!'
-      )
-      setTimeout(() => {
-        setErrorMessage(null)
-      }, 5000)
-      return
-    }
-
     if (persons.some(person => person.number === newNumber)) {
-
-      // alert(`${newNumber} on jo puhelinluettelossa!`)
-
       setErrorMessage(
         `${newNumber} on jo puhelinluettelossa!`
       )
@@ -98,16 +87,20 @@ const App = () => {
       .create(personObject)
       .then(response => {
         setPersons(persons.concat(response.data))
+        setNewName('')
+        setNewNumber('')
+        setSuccessMessage(`Lisätty: ${newName}`)
+        setTimeout(() => {
+          setSuccessMessage(null)
+        }, 5000)
       })
-
-    setPersons(persons.concat(personObject))
-    setNewName('')
-    setNewNumber('')
-
-    setErrorMessage(`Lisätty: ${newName}`)
-    setTimeout(() => {
-      setErrorMessage(null)
-    }, 5000)
+      .catch(error => {
+        console.log(error.response.data)
+        setErrorMessage(error.response.data.error)
+          setTimeout(() => {
+            setErrorMessage(null)
+          }, 5000)
+      })
   }
 
   const handleNameChange = (event) => {
@@ -131,11 +124,11 @@ const App = () => {
         setPersons(persons.filter(person => person.id !== id));
         setNewName('')
 
-        setErrorMessage(
+        setSuccessMessage(
           `${person.name} poistettu`
         )
         setTimeout(() => {
-          setErrorMessage(null)
+          setSuccessMessage(null)
         }, 5000)
       })
       .catch(error => {
@@ -152,7 +145,8 @@ const App = () => {
     <div>
       <h2>Phonebook</h2>
 
-      <Notification message={errorMessage} />
+      <ErrorNotification message={errorMessage} />
+      <SuccessNotification message={successMessage} />
 
       <Filter filterName={filterName} handleFilter={handleFilter} />
 
