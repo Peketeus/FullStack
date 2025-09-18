@@ -2,11 +2,11 @@ require('dotenv').config()                    // dotenv on tärkeää olla ensim
 const express = require('express')
 const morgan = require('morgan')
 const Person = require('./models/person')
-const mongoose = require('mongoose')          // riittää pelkkä require('mongoose') ?
+require('mongoose')          // riittää pelkkä require('mongoose') ?
 
 const app = express()
 
-morgan.token('body', function (req, res) {
+morgan.token('body', function (req) {
   return JSON.stringify(req.body)
 })
 
@@ -40,14 +40,14 @@ const errorHandler = (error, req, res, next) => {
   next(error)
 }
 
-// luo uuden henkilön puhelinluetteloon
+// luo uuden henkilön puhelinluetteloon ja tallentaa sen tietokantaan
 app.post('/api/persons', (req, res, next) => {
   const body = req.body
   // console.log(body)
 
   const person = new Person({
-  name: body.name,
-  number: body.number,
+    name: body.name,
+    number: body.number,
   })
 
   person.save()
@@ -67,8 +67,8 @@ app.get('/api/persons', (req, res, next) => {
   Person.find({})
     .then(persons => {
       res.json(persons)
-  })
-  .catch(error => next(error))
+    })
+    .catch(error => next(error))
 })
 
 // palauttaa infon (henkilöiden määrän ja ajan)
@@ -89,15 +89,13 @@ app.get('/api/persons/:id', (req, res, next) => {
       res.status(404).end()
     }
   })
-  .catch(error => next(error))
+    .catch(error => next(error))
 })
 
 // poistaa numerotiedon
 app.delete('/api/persons/:id', (req, res, next) => {
   Person.findByIdAndDelete(req.params.id)
-    .then(result => {
-      res.status(204).end()
-    })
+    .then(res.status(204).end())
     .catch(error => next(error))
 })
 
