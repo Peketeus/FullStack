@@ -2,7 +2,7 @@ require('dotenv').config()                    // dotenv on tärkeää olla ensim
 const express = require('express')
 const morgan = require('morgan')
 const Person = require('./models/person')
-require('mongoose')          // riittää pelkkä require('mongoose') ?
+require('mongoose')
 
 const app = express()
 

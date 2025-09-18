@@ -1,0 +1,18 @@
+{
+  "name": "bloglist",
+  "version": "0.0.1",
+  "description": "Blog list app to save interesting blogs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "echo \\\"Error: no test specified\\\" && exit 1"
+  },
+  "author": "Jari-Pekka Riihinen",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "mongoose": "^8.18.1",
+    "dotenv": "^16.3.1"
+  }
+}
