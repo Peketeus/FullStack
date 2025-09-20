@@ -1,9 +1,12 @@
-// 'dummy testi, joka palauttaa aina yhden'
+// Sisältää erilaisia testifunktioita, joita kutsutaan /tests hakemistosta
+
+// dummy testi, joka palauttaa aina yhden
 const dummy = (blogs) => {
   return 1
 }
 
-// palauttaa blogien tykkäyksien summan
+// Palauttaa blogien tykkäyksien summan
+// Jos lista on tyhjä, palautetaan '0'
 const totalLikes = (blogs) => {
     const amount = blogs.length
 
@@ -37,6 +40,7 @@ const favoriteBlog = (blogs) => {
 }
 
 // Palauttaa kirjoittajan, jolla on eniten blogeja ja niiden määrän
+// Jos lista on tyhjä, palautetaan 'null'
 const mostBlogs = (blogs) => {
     const amount = blogs.length
 
@@ -71,6 +75,7 @@ const mostBlogs = (blogs) => {
 }
 
 // Palauttaa kirjoittajan, jolla on eniten blogitykkäyksiä ja niiden yhteenlasketun määrän
+// Jos lista on tyhjä, palautetaan 'null'
 const mostLikes = (blogs) => {
     const amount = blogs.length
 
