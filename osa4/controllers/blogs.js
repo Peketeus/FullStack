@@ -1,7 +1,9 @@
 // Kaikki blogien reittien määrittely
 
 const blogsRouter = require('express').Router()
+const { request } = require('express')
 const Blog = require('../models/blog')
+const { response } = require('../app')
 
 // hakee blogit tietokannasta
 blogsRouter.get('/', async (request, response) => {
@@ -43,6 +45,19 @@ blogsRouter.post('/', async (request, response) => {
 blogsRouter.delete('/:id', async (request, response) => {
   await Blog.findByIdAndDelete(request.params.id)
   response.status(204).end()
+})
+
+// blogin muokkaaminen
+blogsRouter.put('/:id', async (request, response) => {
+  const body = request.body
+
+  const editedBlog = await Blog.findByIdAndUpdate(request.params.id, body, { new: true })
+
+  if (editedBlog) {
+    response.json(editedBlog)
+  } else {
+    response.status(404).end()
+  } 
 })
 
 module.exports = blogsRouter

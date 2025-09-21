@@ -5,13 +5,13 @@ const supertest = require('supertest')
 const app = require('../app')
 const helper = require('./test_helper')
 const Blog = require('../models/blog')
+const { title } = require('node:process')
 
 const api = supertest(app)
 
 // Lisää clusteriin blogeja
 beforeEach(async () => {
     await Blog.deleteMany({})   // Tyhjentää testiblogin
-    console.log('cleared')
 
     /*
     // Lisää kaikki blogit clusteriin
@@ -21,12 +21,35 @@ beforeEach(async () => {
         console.log('saved')
     }
     */
-   console.log('adding blogs')
    await Blog.insertMany(helper.initialBlogs) // Lisää kaikki blogit tietokantaan
-   console.log('done')
 })
 
+describe('edition of blogs', () => {
+    test('a spesific blog can be edited', async () => {
+        const blogsAtStart = await helper.blogsInDb()
+        const blogToEdit = blogsAtStart[0]
 
+        // Blogi saa yhden tykkäyksen lisää
+        const editedBlog = {
+            title: blogToEdit.title,
+            author: blogToEdit.author,
+            url: blogToEdit.url,
+            likes: blogToEdit.likes + 1
+        }
+
+        const result = await api
+            .put(`/api/blogs/${blogToEdit.id}`)
+            .send(editedBlog)
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+
+        assert.strictEqual(result.body.likes, blogToEdit.likes + 1)
+
+        const blogsAtEnd = await helper.blogsInDb()
+        const edited = blogsAtEnd.find(b => b.id === blogToEdit.id)
+        assert.strictEqual(edited.likes, blogToEdit.likes + 1)
+    })
+})
 
 describe('deletion of blogs', () => {
     test('a blog can be deleted', async () => {
@@ -38,11 +61,10 @@ describe('deletion of blogs', () => {
             .expect(204)
 
         const blogsAtEnd = await helper.blogsInDb()
+        assert.strictEqual(blogsAtEnd.length, blogsAtStart.length - 1)
 
-        const contents = blogsAtEnd.map(b => b.content)
-        assert(!contents.includes(blogToDelete.content))
-
-        assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length - 1)
+        const titles = blogsAtEnd.map(b => b.title)
+        assert(!titles.includes(blogToDelete.title))
     })
 })
 
