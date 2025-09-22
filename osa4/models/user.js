@@ -4,7 +4,8 @@ const userSchema = mongoose.Schema({
   username: {
     type: String,
     required: true,
-    unique: true // username oltava yksikäsitteinen
+    unique: true, // username oltava yksikäsitteinen
+    minlength: 3
   },
   name: String,
   passwordHash: String,
