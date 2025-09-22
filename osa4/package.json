@@ -11,6 +11,7 @@
   "author": "Jari-Pekka Riihinen",
   "license": "MIT",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "cross-env": "^10.0.0",
     "dotenv": "^16.3.1",
     "express": "^4.19.2",
