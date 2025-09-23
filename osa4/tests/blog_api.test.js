@@ -11,19 +11,29 @@ const { title } = require('node:process')
 
 const api = supertest(app)
 
-// Lisää clusteriin blogeja
-beforeEach(async () => {
-    await Blog.deleteMany({})   // Tyhjentää testiblogin
+// ----------------------------BLOGIEN TESTAAMINEN--------------------------------------------
 
-    /*
-    // Lisää kaikki blogit clusteriin
-    for (let i = 0; i < helper.initialBlogs.length; i++) {
-        let blogObject = new Blog(helper.initialBlogs[i])
-        await blogObject.save()
-        console.log('saved')
-    }
-    */
-   await Blog.insertMany(helper.initialBlogs) // Lisää kaikki blogit tietokantaan
+let token = null
+
+// Lisää tietokantaan blogeja ja käyttäjiä
+beforeEach(async () => {
+    await Blog.deleteMany({})   // Tyhjentää testiblogit
+    await User.deleteMany({})   // Tyhjentää testikäyttäjät
+
+    const passwordHash = await bcrypt.hash('salasana', 10)
+    const user = new User({ username: 'testuser', passwordHash })
+    await user.save()
+
+    // Sisäänkirjautuminen
+    const login = await api
+    .post('/api/login')
+    .send({ username: 'testuser', password: 'salasana' })
+
+    token = login.body.token
+
+    // Blogeille omistaja
+    const blogsWithUser = helper.initialBlogs.map(b => ({ ...b, user: user._id }))
+    await Blog.insertMany(blogsWithUser)
 })
 
 describe('edition of blogs', () => {
@@ -41,6 +51,7 @@ describe('edition of blogs', () => {
 
         const result = await api
             .put(`/api/blogs/${blogToEdit.id}`)
+            .set('Authorization', `Bearer ${token}`)
             .send(editedBlog)
             .expect(200)
             .expect('Content-Type', /application\/json/)
@@ -60,6 +71,7 @@ describe('deletion of blogs', () => {
 
         await api
             .delete(`/api/blogs/${blogToDelete.id}`)
+            .set('Authorization', `Bearer ${token}`)
             .expect(204)
 
         const blogsAtEnd = await helper.blogsInDb()
@@ -86,6 +98,7 @@ describe('when blog is posted', () => {
 
         await api
             .post('/api/blogs')
+            .set('Authorization', `Bearer ${token}`)
             .send(newBlog)
             .expect(201)
             .expect('Content-Type', /application\/json/)
@@ -96,6 +109,23 @@ describe('when blog is posted', () => {
 
         const addedTitle = blogsAtEnd.map(b => b.title)
         assert.strictEqual(addedTitle.includes('Nyyläveljekset'), true)
+    })
+
+    test('without token', async () => {
+        const newBlog = {
+            title: 'Kurkkukeittoa',
+            author: 'Kimmo ja Kari',
+            url: 'kokkinurkkaus.html',
+            likes: 999
+        }
+
+        await api
+            .post('/api/blogs')
+            .send(newBlog)
+            .expect(401)
+
+        const blogsAtEnd = await helper.blogsInDb()
+        assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length)
     })
 })
 
@@ -109,7 +139,12 @@ describe('when spesific blogs are returned', () => {
             .expect(200)
             .expect('Content-Type', /application\/json/)
 
-        assert.deepStrictEqual(resultBlog.body, blogToView)
+        assert.strictEqual(resultBlog.body.title, blogToView.title)
+        assert.strictEqual(resultBlog.body.author, blogToView.author)
+        assert.strictEqual(resultBlog.body.url, blogToView.url)
+        assert.strictEqual(resultBlog.body.likes, blogToView.likes)
+        assert.strictEqual(resultBlog.body.id, blogToView.id)
+        assert.strictEqual(resultBlog.body.user, blogToView.user.toString()) // blogToView.user on olio
     })
 
     test('blogs are returned as json', async () => {
@@ -132,7 +167,7 @@ describe('when spesific blogs are returned', () => {
         assert.strictEqual(contents.includes('Go To Statement Considered Harmful'), true)
     })
 
-    test('Blog identifier is ID', async () => {
+    test('blog identifier is ID', async () => {
         const response = await api.get('/api/blogs')
         const blogs = response.body
 
@@ -152,6 +187,7 @@ describe('when blogs are added without parameter', () => {
 
         const savedBlog = await api
         .post('/api/blogs')
+        .set('Authorization', `Bearer ${token}`)
         .send(newBlog)
         .expect(201)
         .expect('Content-Type', /application\/json/)
@@ -168,6 +204,7 @@ describe('when blogs are added without parameter', () => {
 
         await api
             .post('/api/blogs')
+            .set('Authorization', `Bearer ${token}`)
             .send(newBlog)
             .expect(400)
 
@@ -184,6 +221,7 @@ describe('when blogs are added without parameter', () => {
 
         await api
             .post('/api/blogs')
+            .set('Authorization', `Bearer ${token}`)
             .send(newBlog)
             .expect(400)
 
