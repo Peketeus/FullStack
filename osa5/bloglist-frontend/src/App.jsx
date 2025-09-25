@@ -2,13 +2,16 @@ import { useState, useEffect } from 'react'
 import Blog from './components/Blog'
 import blogService from './services/blogs'
 import loginService from './services/login'
+import './index.css'
 
 const App = () => {
   const [blogs, setBlogs] = useState([])
   const [username, setUsername] = useState('') 
   const [password, setPassword] = useState('')
   const [user, setUser] = useState(null)
+
   const [errorMessage, setErrorMessage] = useState(null)
+  const [notificationMessage, setNotificationMessage] = useState(null)
 
   const [newBlog, setNewBlog] = useState('')
   const [newAuthor, setNewAuthor] = useState('')
@@ -81,9 +84,14 @@ const App = () => {
     setUser(null)
   }
 
-  const Notification = ({ message }) => {
+  const ErrorNotification = ({ message }) => {
     if (!message) return null
     return <div className="error">{message}</div>
+  }
+
+  const Notification = ({ message }) => {
+    if (!message) return null
+    return <div  className='notification'>{message}</div>
   }
 
   const blogForm = () => (
@@ -135,13 +143,19 @@ const App = () => {
       setNewBlog('')
       setNewAuthor('')
       setNewUrl('')
+
+      setNotificationMessage(`a new blog "${blogObject.title}" by ${blogObject.author} added`)
+      setTimeout(() => {
+        setNotificationMessage(null)
+      }, 5000)
     })
   }
 
   return (
     <div>
       <h2>Blogs</h2>
-      <Notification message={errorMessage} />
+      <ErrorNotification message={errorMessage} />
+      <Notification message={notificationMessage} />
 
       {!user && loginForm()}
 
