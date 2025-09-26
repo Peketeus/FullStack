@@ -1,10 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Blog from './components/Blog'
+import LoginForm from './components/LoginForm'
 import blogService from './services/blogs'
 import loginService from './services/login'
 import './index.css'
+import BlogForm from './components/BlogForm'
+import Togglable from './components/Togglable'
 
 const App = () => {
+  const [loginVisible, setLoginVisible] = useState(false)
+
   const [blogs, setBlogs] = useState([])
   const [username, setUsername] = useState('') 
   const [password, setPassword] = useState('')
@@ -12,10 +17,6 @@ const App = () => {
 
   const [errorMessage, setErrorMessage] = useState(null)
   const [notificationMessage, setNotificationMessage] = useState(null)
-
-  const [newBlog, setNewBlog] = useState('')
-  const [newAuthor, setNewAuthor] = useState('')
-  const [newUrl, setNewUrl] = useState('')
 
   useEffect(() => {
     blogService.getAll().then(blogs =>
@@ -32,31 +33,30 @@ const App = () => {
     }
   }, [])
 
-  const loginForm = () => (
-    <form onSubmit={handleLogin}>
+  const blogFormRef = useRef()
+
+  const loginForm = () => {
+    const hideWhenVisible = { display: loginVisible ? 'none' : '' }
+    const showWhenVisible = { display: loginVisible ? '' : 'none' }
+
+    return (
       <div>
-        <label>
-          username:
-          <input
-            type="text"
-            value={username}
-            onChange={({ target }) => setUsername(target.value)}
+        <div style={hideWhenVisible}>
+          <button onClick={() => setLoginVisible(true)}>log in</button>
+        </div>
+        <div style={showWhenVisible}>
+          <LoginForm
+            username={username}
+            password={password}
+            handleUsernameChange={({ target }) => setUsername(target.value)}
+            handlePasswordChange={({ target }) => setPassword(target.value)}
+            handleSubmit={handleLogin}
           />
-        </label>
+          <button onClick={() => setLoginVisible(false)}>cancel</button>
+        </div>
       </div>
-      <div>
-        <label>
-          password:
-          <input
-            type="password"
-            value={password}
-            onChange={({ target }) => setPassword(target.value)}
-          />
-        </label>
-      </div>
-      <button type="submit">login</button>
-    </form>
-  )
+    )
+  }
 
   const handleLogin = async (event) => {
     event.preventDefault()
@@ -94,60 +94,15 @@ const App = () => {
     return <div  className='notification'>{message}</div>
   }
 
-  const blogForm = () => (
-    <form onSubmit={addBlog}>
-      <div>
-        <label>
-          title:
-          <input
-            type='text'
-            value={newBlog}
-            onChange={({ target }) => setNewBlog(target.value)}
-          />
-        </label>
-      </div>
-      <div>
-        <label>
-          author:
-          <input
-            type='text'
-            value={newAuthor}
-            onChange={({ target }) => setNewAuthor(target.value)}
-          />
-        </label>
-      </div>
-      <div>
-        <label>
-          url:
-          <input
-            type='text'
-            value={newUrl}
-            onChange={({ target }) => setNewUrl(target.value)}
-          />
-        </label>
-      </div>
-      <button type="submit">create</button>
-    </form>
-  )
-
-  const addBlog = event => {
-    event.preventDefault()
-    const blogObject = {
-      title: newBlog,
-      author: newAuthor,
-      url: newUrl
-    }
-
+  const addBlog = (blogObject) => {
     blogService.create(blogObject).then(returnedBlog => {
       setBlogs(blogs.concat(returnedBlog))
-      setNewBlog('')
-      setNewAuthor('')
-      setNewUrl('')
 
       setNotificationMessage(`a new blog "${blogObject.title}" by ${blogObject.author} added`)
       setTimeout(() => {
         setNotificationMessage(null)
       }, 5000)
+      blogFormRef.current.toggleVisibility()
     })
   }
 
@@ -162,8 +117,9 @@ const App = () => {
       {user && (
         <div>
           <p>{user.name} logged in <button onClick={handleLogout}>logout</button></p>
-          <h2>create new blog</h2>
-          {blogForm()}
+          <Togglable buttonLabel="new blog" ref={blogFormRef}>
+            <BlogForm createBlog={addBlog} />
+          </Togglable>
         </div>
       )}
 
