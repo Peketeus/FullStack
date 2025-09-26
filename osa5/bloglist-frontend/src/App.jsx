@@ -106,6 +106,16 @@ const App = () => {
     })
   }
 
+  const addLike = async (blog) => {
+    const updatedBlog = {
+      ...blog,
+      likes: blog.likes + 1
+    }
+
+    const returnedBlog = await blogService.update(blog.id, updatedBlog)
+    setBlogs(blogs.map(b => b.id !== blog.id ? b : returnedBlog))
+  }
+
   return (
     <div>
       <h2>Blogs</h2>
@@ -126,7 +136,7 @@ const App = () => {
       {user && (
         <div>
           {blogs.map(blog =>
-            <Blog key={blog.id} blog={blog} />
+            <Blog key={blog.id} blog={blog} addLike={addLike} />
           )}
         </div>
       )}

@@ -1,7 +1,7 @@
 import { useState } from "react"
 import '../index.css'
 
-const Blog = ({ blog }) => {
+const Blog = ({ blog, addLike }) => {
   const [moreDetails, setMoreDetails] = useState(false)
 
   return (
@@ -14,7 +14,10 @@ const Blog = ({ blog }) => {
       {moreDetails && (
         <div>
           <p>Url: {blog.url}</p>
-          <p>Likes: {blog.likes}</p>
+          <p>
+            Likes: {blog.likes}{' '}
+            <button onClick={() => addLike(blog)}>like</button>
+          </p>
           <p>Added by user: {blog.user.name}</p>
         </div>
       )}
